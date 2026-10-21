@@ -9,5 +9,4 @@
         this.ownerID = null;
     }
 }
-
 module.exports = Space;
