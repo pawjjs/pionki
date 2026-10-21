@@ -1,5 +1,5 @@
-﻿const Board = require('./Board');
-const Player = require('./Player');
+﻿import Board from './Board.js';
+import Player from './Player';
 
 class Game {
     constructor() {
@@ -11,4 +11,4 @@ class Game {
         this.currentPlayerIndex = 0;
     }
 }
-module.exports = Game;
+export default Game;

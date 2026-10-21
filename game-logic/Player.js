@@ -11,4 +11,4 @@
         this.in_prison = false;
     }
 }
-module.exports = Player;
+export default Player;

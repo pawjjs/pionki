@@ -9,4 +9,4 @@
         this.ownerID = null;
     }
 }
-module.exports = Space;
+export default Space;
