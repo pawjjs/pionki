@@ -11,5 +11,4 @@ class Game {
         this.currentPlayerIndex = 0;
     }
 }
-
 module.exports = Game;

@@ -4,7 +4,6 @@
         this.id = id;
         this.name = name;
         this.colour = colour;
-
         // Wartości startowe (zawsze takie same na początku gry)
         this.account_balance = 1500;
         this.bankruptcy = false;
