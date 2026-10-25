@@ -5,10 +5,11 @@
         this.name = name;
         this.colour = colour;
         // Wartości startowe (zawsze takie same na początku gry)
-        this.account_balance = 1500;
+        this.accountBalance = 1500;
         this.bankruptcy = false;
         this.position = 0;
-        this.in_prison = false;
+        this.inPrison = false;
+        this.turnsInPrison = 0;
     }
 }
 export default Player;
