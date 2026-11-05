@@ -38,3 +38,9 @@
 - Gracz zostaje zbankrutowany, jeżeli jego dług (czynsz dla innego gracza lub opłata podatkowa do banku) przekracza jego aktualny stan konta. 
 - Uczestnik odpada z rozgrywki. 
 - Cały majątek bankruta zostaje wyzerowany i wraca do puli dostępnych nieruchomości, stając się ponownie możliwym do kupienia przez pozostałych w grze. 
+
+Lista osób realizująca projekt:
+1. Karolina Czaplicka
+2. Oliwia Sieradzka
+3. Mykhailo Pashuk
+4. Oleksandra Kruhlova
