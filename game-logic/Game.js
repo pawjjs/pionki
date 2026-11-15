@@ -6,6 +6,7 @@ import Player from './Player.js';
         1. WAITING_FOR_ROLL - rzut kości przez gracza, przesunięcie znacznika na dane pole
         2. FIELD_CHECKING - sprawdzamy co to za pole na, którym gracz stanął właśnie i co trzeba zrobić (jaką akcje wykonać)
         3. END_TURN - podsumowanie tury, sprawdzenie czy gracz ma dodatkowy ruch za dublet, zmiana gracza na następnego
+        4. GAME_OVER - koniec gry
 
     STANY DECYZJI GRACZA PODCZAS TURY:
         1. WAITING_FOR_BUY_DECISION - gracz stanął na wolnym polu, silnik czeka na decyzję dotyczącą zakupu przez gracza
