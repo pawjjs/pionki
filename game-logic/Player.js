@@ -10,6 +10,7 @@
         this.position = 0;
         this.inPrison = false;
         this.turnsInPrison = 0;
+        this.hasOutOfPrisonCard = false;
     }
 }
 export default Player;
