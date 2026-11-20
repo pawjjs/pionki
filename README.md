@@ -44,3 +44,23 @@ Lista osób realizująca projekt:
 2. Oliwia Sieradzka
 3. Mykhailo Pashuk
 4. Oleksandra Kruhlova
+
+---
+
+## Uruchomienie projektu
+
+### Backend (`monopoly-backend`)
+
+1. Skonfiguruj plik ze zmiennymi środowiskowymi `.env` na podstawie `.env.example`.
+Dla JWT_SECRET wpisz dowolny ciąg znaków.
+
+2. Zainstaluj zależności i uruchom serwer:
+   ```bash
+   npm install
+   npm run start:dev
+   ```
+   Aplikacja uruchomi się na `http://localhost:3000`. Dokumentacja Swagger API dostępna jest pod adresem `http://localhost:3000/api`.
+
+### Frontend (`monopoly-frontend`)
+
+#### TODO
