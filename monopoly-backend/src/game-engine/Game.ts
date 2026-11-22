@@ -30,10 +30,10 @@ export default class Game {
     extraTurn: boolean;
     events: GameEvent[];
 
-    constructor() {
+    constructor(players: Player[]) {
         this.board = new Board();
         this.deck = new Deck();
-        this.players = [];
+        this.players = players;
         this.currentPlayerIndex = 0;
         this.dublets_in_a_row = 0;
         this.state = "WAITING_FOR_ROLL";
@@ -51,7 +51,7 @@ export default class Game {
         return flushed;
     }
 
-    endTurn(): void {
+    private endTurn(): void {
         if (this.extraTurn === false) {
             this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         }
@@ -157,7 +157,7 @@ export default class Game {
         }
     }
 
-    checkSpace(): void {
+    private checkSpace(): void {
         if (this.state === "FIELD_CHECKING") {
             const activePlayer = this.players[this.currentPlayerIndex];
             const currentSpace = this.board.spaces[activePlayer.position]
@@ -340,7 +340,7 @@ export default class Game {
         }
     }
 
-    declareBankruptcy(bankruptPlayer: Player, creditor: Player | null = null): void {
+    private declareBankruptcy(bankruptPlayer: Player, creditor: Player | null = null): void {
         this.emit(`Gracz ${bankruptPlayer.name} nie wytrzymał presji, brakuje mu środków i rzuca studia`);
         bankruptPlayer.bankruptcy = true;
 
@@ -361,7 +361,7 @@ export default class Game {
         this.checkWinCondition();
     }
 
-    checkWinCondition(): void {
+    private checkWinCondition(): void {
         const activePlayers = this.players.filter(p => p.bankruptcy === false);
 
         if (activePlayers.length === 1) {
