@@ -29,8 +29,6 @@ import {RoomDetailsDto} from './dto/room-details.dto.js';
 import {RoomSummaryDto} from './dto/room-summary.dto.js';
 import {RoomIdDto} from './dto/room-id.dto.js';
 
-const GAME_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-
 @ApiTags('rooms')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -148,7 +146,6 @@ export class RoomsController {
     }
 
     @Post(':id/start')
-    @Redirect(GAME_URL, HttpStatus.FOUND)
     @ApiOperation({
         summary: 'Rozpocznij grę',
         description:
@@ -156,12 +153,7 @@ export class RoomsController {
     })
     @ApiFoundResponse({
         description: 'Przekierowanie do uruchomionej gry',
-        headers: {
-            Location: {
-                description: GAME_URL,
-                schema: {type: 'string', example: GAME_URL},
-            },
-        },
+        type: RoomDetailsDto
     })
     @ApiForbiddenResponse({
         description: 'Tylko właściciel pokoju może rozpocząć grę',
@@ -175,7 +167,7 @@ export class RoomsController {
     startGame(
         @Param('id') id: string,
         @Req() request: AuthenticatedRequest,
-    ): void {
-        this.roomsService.startGame(id, request.user.sub);
+    ): RoomDetailsDto {
+        return this.roomsService.startGame(id, request.user.sub);
     }
 }

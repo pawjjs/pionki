@@ -1,21 +1,25 @@
-import {ConflictException, ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
+import {BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
 import {randomUUID} from 'node:crypto';
 import {RoomsCache} from './rooms.cache.js';
 import {MAX_PLAYERS_IN_ROOM, PlayersRoom} from './rooms.entities.js';
 import {RoomSummaryDto} from './dto/room-summary.dto.js';
 import {RoomDetailsDto} from './dto/room-details.dto.js';
 import {RoomIdDto} from './dto/room-id.dto.js';
+import { GameService } from '../game/game.service.js';
 
 @Injectable()
 export class RoomsService {
-    constructor(private readonly cache: RoomsCache) {}
+    constructor(
+        private readonly gameService: GameService,
+        private readonly cache: RoomsCache
+    ) {}
 
     openRoom(nickname: string): RoomDetailsDto {
         if (this.cache.findByPlayer(nickname)) {
             throw new ConflictException('You are already in a room');
         }
 
-        const room = new PlayersRoom(randomUUID(), nickname, [nickname]);
+        const room = new PlayersRoom(randomUUID(), nickname, [nickname], false);
         this.cache.save(room);
 
         return this.toDetails(room);
@@ -28,6 +32,7 @@ export class RoomsService {
             .findAll()
             .filter((room) => room.id !== ownRoom?.id)
             .filter((room) => room.players.length < MAX_PLAYERS_IN_ROOM)
+            .filter((room) => !room.gameStarted)
             .map((room) => this.toSummary(room));
     }
 
@@ -52,6 +57,10 @@ export class RoomsService {
             throw new ConflictException('Room is full');
         }
 
+        if (room.gameStarted) {
+            throw new ConflictException('Game has already started');
+        }
+
         const currentRoom = this.cache.findByPlayer(nickname);
 
         if (currentRoom) {
@@ -73,14 +82,20 @@ export class RoomsService {
         this.removePlayer(room, nickname);
     }
 
-    startGame(roomId: string, nickname: string): void {
+    startGame(roomId: string, nickname: string): RoomDetailsDto {
         const room = this.getRoomOrThrow(roomId);
 
         if (room.owner !== nickname) {
             throw new ForbiddenException('Only the room owner can start the game');
         }
+        if (room.players.length < 2) {
+            throw new BadRequestException('To start the game, need 2 or more players')
+        }
 
-        this.cache.delete(room);
+        this.gameService.createGame(roomId, room.players)
+        room.gameStarted = true;
+
+        return room;
     }
 
     private getRoomOrThrow(id: string): PlayersRoom {
@@ -116,6 +131,7 @@ export class RoomsService {
             id: room.id,
             owner: room.owner,
             players: [...room.players],
+            gameStarted: room.gameStarted,
         };
     }
 }

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { createObserveModule } from '@nestjs/observe';
 import { UsersModule } from './users/users.module.js';
 import { RoomsModule } from './rooms/rooms.module.js';
+import { GameModule } from './game/game.module.js';
 import {TypeOrmModule} from "@nestjs/typeorm";
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -25,6 +26,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
     UsersModule,
     RoomsModule,
+    GameModule,
   ]
 })
 export class AppModule {}

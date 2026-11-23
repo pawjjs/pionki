@@ -38,7 +38,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly gameService: GameService, private readonly tokenService: TokenService) { }
+  constructor(
+    private readonly gameService: GameService,
+    private readonly tokenService: TokenService
+  ) { }
 
   handleConnection(client: Socket): void {
     const token = client.handshake.auth?.token;
@@ -59,7 +62,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } catch (error) {
       client.emit('error', { message: 'Invalid or expired token' });
       console.log(`Nieudany auth socketu ${client.id}`);
-      client.disconnect(true);  
+      client.disconnect(true);
     }
   }
 
