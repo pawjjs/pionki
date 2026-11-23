@@ -21,4 +21,10 @@ export class RoomDetailsDto {
         maxItems: 4,
     })
     players!: string[];
+
+    @ApiProperty({
+        description: 'Czy można dołączyć do gry',
+        example: true,
+    })
+    gameStarted: boolean;
 }

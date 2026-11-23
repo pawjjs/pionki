@@ -1,4 +1,5 @@
-﻿import Board from './Board.js';
+import Board from './Board.js';
+import Deck from './Deck.js';
 import Player from './Player.js';
 
 /*
@@ -14,20 +15,45 @@ import Player from './Player.js';
         3. DRAWING_CARD - jeśli gracz stanie na polu szansa dobiera kartę i wykonuje jej efekt
  */
 
-class Game {
-    constructor() {
+export interface GameEvent {
+    type: string;
+    message: string;
+}
+
+export default class Game {
+    board: Board;
+    deck: Deck;
+    players: Player[];
+    currentPlayerIndex: number;
+    dublets_in_a_row: number;
+    state: string;
+    extraTurn: boolean;
+    events: GameEvent[];
+
+    constructor(players: Player[]) {
         this.board = new Board();
         this.deck = new Deck();
-        this.players = [];
+        this.players = players;
         this.currentPlayerIndex = 0;
         this.dublets_in_a_row = 0;
         this.state = "WAITING_FOR_ROLL";
         this.extraTurn = false;
+        this.events = [];
     }
 
-    endTurn(){
+    private emit(message: string): void {
+        this.events.push({ type: "info", message });
+    }
+
+    cleanEvents(): GameEvent[] {
+        const flushed = [...this.events];
+        this.events = [];
+        return flushed;
+    }
+
+    private endTurn(): void {
         if (this.extraTurn === false) {
-            this.currentPlayerIndex = (this.currentPlayerIndex+1) % this.players.length;
+            this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         }
         this.extraTurn = false;
         const activePlayer = this.players[this.currentPlayerIndex];
@@ -43,7 +69,7 @@ class Game {
         }
     }
 
-    handlePrisonDecision(action) {
+    handlePrisonDecision(action: string): void {
         if (this.state === "IN_PRISON_DECISION") {
             const activePlayer = this.players[this.currentPlayerIndex];
 
@@ -53,10 +79,10 @@ class Game {
                         activePlayer.accountBalance -= 50;
                         activePlayer.inPrison = false;
                         activePlayer.turnsInPrison = 0;
-                        console.log(`Gracz: ${activePlayer.name} płaci 50$ kary dyscyplinarnej i pomyślnie opuszcza Komisję`);
+                        this.emit(`Gracz: ${activePlayer.name} płaci 50$ kary dyscyplinarnej i pomyślnie opuszcza Komisję`);
                         this.state = "WAITING_FOR_ROLL";
                     } else {
-                        console.log(`Gracz: ${activePlayer.name} nie ma wystarczająco pieniędzy, by opłacić karę`);
+                        this.emit(`Gracz: ${activePlayer.name} nie ma wystarczająco pieniędzy, by opłacić karę`);
                     }
                     break;
 
@@ -65,38 +91,38 @@ class Game {
                         activePlayer.hasOutOfPrisonCard = false;
                         activePlayer.inPrison = false;
                         activePlayer.turnsInPrison = 0;
-                        console.log(`Gracz: ${activePlayer.name} używa znajomości i wychodzi wolno z Komisji Dyscyplinarnej!`);
+                        this.emit(`Gracz: ${activePlayer.name} używa znajomości i wychodzi wolno z Komisji Dyscyplinarnej!`);
                         this.state = "WAITING_FOR_ROLL";
                     } else {
-                        console.log(`Gracz: ${activePlayer.name} próbował użyć karty wyjścia z Komisji, ale jej nie posiada!`);
+                        this.emit(`Gracz: ${activePlayer.name} próbował użyć karty wyjścia z Komisji, ale jej nie posiada!`);
                     }
                     break;
 
                 case "ROLL":
-                    let dice1, dice2;
+                    let dice1: number, dice2: number;
                     dice1 = Math.floor(Math.random() * 6) + 1;
                     dice2 = Math.floor(Math.random() * 6) + 1;
                     const totalRoll = dice1 + dice2;
 
                     if (dice1 === dice2) {
-                        activePlayer.position = (activePlayer.position + totalRoll)%40;
+                        activePlayer.position = (activePlayer.position + totalRoll) % 40;
                         activePlayer.turnsInPrison = 0;
                         activePlayer.inPrison = false;
-                        console.log(`Gracz: ${activePlayer.name} wyrzuca dublet. Przesuwa się o: ${totalRoll} pola. Nowa pozycja: ${activePlayer.position}`);
+                        this.emit(`Gracz: ${activePlayer.name} wyrzuca dublet. Przesuwa się o: ${totalRoll} pola. Nowa pozycja: ${activePlayer.position}`);
                         this.state = "FIELD_CHECKING";
                         this.checkSpace();
                     }
-                    else if (activePlayer.turnsInPrison === 2){
+                    else if (activePlayer.turnsInPrison === 2) {
                         if (activePlayer.accountBalance >= 50) {
                             activePlayer.accountBalance -= 50;
                             activePlayer.turnsInPrison = 0;
                             activePlayer.inPrison = false;
-                            console.log(`Gracz: ${activePlayer.name} płaci 50$ kary dyscyplinarnej i pomyślnie opuszcza Komisję`);
-                            activePlayer.position = (activePlayer.position + totalRoll)%40;
+                            this.emit(`Gracz: ${activePlayer.name} płaci 50$ kary dyscyplinarnej i pomyślnie opuszcza Komisję`);
+                            activePlayer.position = (activePlayer.position + totalRoll) % 40;
                             this.state = "FIELD_CHECKING";
                             this.checkSpace();
                         } else {
-                            console.log(`Gracz: ${activePlayer.name} nie ma wystarczająco pieniędzy, by opłacić karę`);
+                            this.emit(`Gracz: ${activePlayer.name} nie ma wystarczająco pieniędzy, by opłacić karę`);
                         }
                     }
                     else {
@@ -107,37 +133,38 @@ class Game {
 
 
                 default:
-                    console.log("Nieznana akcja");
+                    this.emit("Nieznana akcja");
                     break;
             }
         }
     }
 
-    buyProperty(wantsToBuy) { // wantsToBuy - true/false
-        if (this.state === "WAITING_FOR_BUY_DECISION"){
+    buyProperty(wantsToBuy: boolean): void {
+        if (this.state === "WAITING_FOR_BUY_DECISION") {
             const activePlayer = this.players[this.currentPlayerIndex];
             const currentSpace = this.board.spaces[activePlayer.position]
 
             if (wantsToBuy === true) {
                 activePlayer.accountBalance -= currentSpace.price;
-                console.log(`Gracz: ${activePlayer.name} płaci za kierunek: ${currentSpace.text} zapłacił: ${currentSpace.price}`);
+                this.emit(`Gracz: ${activePlayer.name} płaci za kierunek: ${currentSpace.name} zapłacił: ${currentSpace.price}`);
                 currentSpace.ownerID = activePlayer.id;
                 this.endTurn();
             }
             else {
+                this.emit(`Gracz ${activePlayer.name} nie kupuje kierunku ${currentSpace.name}`);
                 this.endTurn();
             }
         }
     }
 
-    checkSpace() {
+    private checkSpace(): void {
         if (this.state === "FIELD_CHECKING") {
             const activePlayer = this.players[this.currentPlayerIndex];
             const currentSpace = this.board.spaces[activePlayer.position]
             switch (currentSpace.type) {
                 case "START":
                     activePlayer.accountBalance += currentSpace.baseRent;
-                    console.log(`Gracz: ${activePlayer.name} rozpoczyna nowy semestr. Dziekanat wypłaca stypendium w wysokości ${currentSpace.baseRent}`);
+                    this.emit(`Gracz: ${activePlayer.name} rozpoczyna nowy semestr. Dziekanat wypłaca stypendium w wysokości ${currentSpace.baseRent}`);
                     this.endTurn();
                     break;
 
@@ -147,7 +174,7 @@ class Game {
                         let ownedByPlayer = 0;
                         let monopol = false;
 
-                        const owner = this.players.find(p => p.id === currentSpace.ownerID);
+                        const owner = this.getPlayerOfThrow(currentSpace.ownerID);
 
                         for (let i = 0; i < this.board.spaces.length; i++) {
                             const space = this.board.spaces[i];
@@ -168,7 +195,7 @@ class Game {
                             if (activePlayer.accountBalance >= rent) {
                                 activePlayer.accountBalance -= rent;
                                 owner.accountBalance += rent;
-                                console.log(`Gracz ${activePlayer.name} staje na kierunku ${currentSpace.text}, gracz ${owner.name} kontroluje cały wydział. Gracz ${activePlayer.name} opłaca podwójną opłatę warunkową: ${rent}`);
+                                this.emit(`Gracz ${activePlayer.name} staje na kierunku ${currentSpace.name}, gracz ${owner.name} kontroluje cały wydział. Gracz ${activePlayer.name} opłaca podwójną opłatę warunkową: ${rent}`);
                                 this.endTurn();
                             } else {
                                 this.declareBankruptcy(activePlayer, owner);
@@ -179,7 +206,7 @@ class Game {
                             if (activePlayer.accountBalance >= rent) {
                                 activePlayer.accountBalance -= rent;
                                 owner.accountBalance += rent;
-                                console.log(`Gracz ${activePlayer.name} staje na kierunku ${currentSpace.text}, które należy do gracza ${owner.name}. Gracz ${activePlayer.name} opłaca warunek: ${rent}`);
+                                this.emit(`Gracz ${activePlayer.name} staje na kierunku ${currentSpace.name}, które należy do gracza ${owner.name}. Gracz ${activePlayer.name} opłaca warunek: ${rent}`);
                                 this.endTurn();
                             } else {
                                 this.declareBankruptcy(activePlayer, owner);
@@ -187,11 +214,11 @@ class Game {
                         }
                     }
                     else {
-                        if (activePlayer.accountBalance >= currentSpace.price){
+                        if (activePlayer.accountBalance >= currentSpace.price) {
                             this.state = "WAITING_FOR_BUY_DECISION";
                         }
                         else {
-                            console.log(`Gracz ${activePlayer.name} ma za mało pieniędzy by opłacić naukę na kierunku: ${currentSpace.name}`);
+                            this.emit(`Gracz ${activePlayer.name} ma za mało pieniędzy by opłacić naukę na kierunku: ${currentSpace.name}`);
                             this.endTurn();
                         }
                     }
@@ -200,7 +227,7 @@ class Game {
                 case "STATION":
                     if (currentSpace.ownerID != null) {
                         let ownedByPlayer = 0;
-                        const owner = this.players.find(p => p.id === currentSpace.ownerID);
+                        const owner = this.getPlayerOfThrow(currentSpace.ownerID);
 
                         for (let i = 0; i < this.board.spaces.length; i++) {
                             const space = this.board.spaces[i];
@@ -215,25 +242,25 @@ class Game {
                         if (activePlayer.accountBalance >= rent) {
                             activePlayer.accountBalance -= rent;
                             owner.accountBalance += rent;
-                            console.log(`Gracz ${activePlayer.name} staje na miejscówce ${currentSpace.text}, gracz ${owner.name} posiada ${ownedByPlayer} miejscówek. Gracz ${activePlayer.name} płaci kwotę w wysokości ${rent}`);
+                            this.emit(`Gracz ${activePlayer.name} staje na miejscówce ${currentSpace.name}, gracz ${owner.name} posiada ${ownedByPlayer} miejscówek. Gracz ${activePlayer.name} płaci kwotę w wysokości ${rent}`);
                             this.endTurn();
                         } else {
                             this.declareBankruptcy(activePlayer, owner);
                         }
                     }
                     else {
-                        if (activePlayer.accountBalance >= currentSpace.price){
+                        if (activePlayer.accountBalance >= currentSpace.price) {
                             this.state = "WAITING_FOR_BUY_DECISION";
                         }
                         else {
-                            console.log(`Gracz ${activePlayer.name} ma za mało pieniędzy by kupić pole: ${currentSpace.name}`);
+                            this.emit(`Gracz ${activePlayer.name} ma za mało pieniędzy by kupić pole: ${currentSpace.name}`);
                             this.endTurn();
                         }
                     }
                     break;
 
                 case "GO_TO_PRISON":
-                    console.log(`Gracz: ${activePlayer.name} zostaje przyłapany na ściąganiu i trafia prosto do Komisji Dyscyplinarnej`);
+                    this.emit(`Gracz: ${activePlayer.name} zostaje przyłapany na ściąganiu i trafia prosto do Komisji Dyscyplinarnej`);
                     activePlayer.position = 10;
                     activePlayer.inPrison = true;
                     this.extraTurn = false;
@@ -241,14 +268,14 @@ class Game {
                     break;
 
                 case "PRISON":
-                    console.log(`Gracz: ${activePlayer.name} tylko przechodzi obok Komisji Dyscyplinarnej, nic się nie dzieje`)
+                    this.emit(`Gracz: ${activePlayer.name} tylko przechodzi obok Komisji Dyscyplinarnej, nic się nie dzieje`)
                     this.endTurn();
                     break;
 
                 case "TAX":
                     if (activePlayer.accountBalance >= currentSpace.baseRent) {
                         activePlayer.accountBalance -= currentSpace.baseRent;
-                        console.log(`Odjęto ${currentSpace.baseRent} z konta gracza: ${activePlayer.name}`);
+                        this.emit(`Odjęto ${currentSpace.baseRent} z konta gracza: ${activePlayer.name}`);
                         this.endTurn();
                     } else {
                         this.declareBankruptcy(activePlayer, null);
@@ -258,18 +285,18 @@ class Game {
                 case "CHANCE":
                     const card = this.deck.drawCard();
                     if (!card) {
-                        console.log("Talia jest pusta!");
+                        this.emit("Talia jest pusta!");
                         this.endTurn();
                         break;
                     }
-                    console.log(`Gracz ${activePlayer.name} wyciąga kartę: ${card.text}`);
+                    this.emit(`Gracz ${activePlayer.name} wyciąga kartę: ${card.text}`);
                     switch (card.type) {
-                        case "ADD_MONEY": // dodanie kasy
+                        case "ADD_MONEY":
                             activePlayer.accountBalance += card.value;
                             this.endTurn();
                             break;
 
-                        case "SUBTRACT_MONEY": // odjęcie kasy
+                        case "SUBTRACT_MONEY":
                             if (activePlayer.accountBalance >= card.value) {
                                 activePlayer.accountBalance -= card.value;
                                 this.endTurn();
@@ -278,50 +305,50 @@ class Game {
                             }
                             break;
 
-                        case "MOVE_TO_SPACE": // przeniesienie na pole
+                        case "MOVE_TO_SPACE":
                             activePlayer.position = card.value;
-                            console.log(`Gracz ${activePlayer.name} przenosi się na pole ${card.value}`);
+                            this.emit(`Gracz ${activePlayer.name} przenosi się na pole ${card.value}`);
                             this.checkSpace();
                             break;
 
-                        case "MOVE_RELATIVE": // przesunięcie o x pól
-                            activePlayer.position = (activePlayer.position + card.value + 40) % 40; // Dodajemy +40 przed modulo żeby cofanie o 3 pola nie cofało nas na pola ujemne np pole nr 2-3=-1 -> 2+40-=39
-                            console.log(`Gracz ${activePlayer.name} przesuwa się na pozycję ${activePlayer.position}`);
+                        case "MOVE_RELATIVE":
+                            activePlayer.position = (activePlayer.position + card.value + 40) % 40;
+                            this.emit(`Gracz ${activePlayer.name} przesuwa się na pozycję ${activePlayer.position}`);
                             this.checkSpace();
                             break;
 
-                        case "GO_TO_PRISON": // idź do więzienia
+                        case "GO_TO_PRISON":
                             activePlayer.position = 10;
                             activePlayer.inPrison = true;
                             this.extraTurn = false;
-                            console.log(`Gracz ${activePlayer.name} zostaje odesłany do Komisji Dyscyplinarnej!`);
+                            this.emit(`Gracz ${activePlayer.name} zostaje odesłany do Komisji Dyscyplinarnej!`);
                             this.endTurn();
                             break;
 
-                        case "OUT_OF_PRISON": // karta wyjście z więzienia
+                        case "OUT_OF_PRISON":
                             activePlayer.hasOutOfPrisonCard = true;
-                            console.log(`Gracz ${activePlayer.name} zachowuje kartę wyjścia z Komisji!`);
+                            this.emit(`Gracz ${activePlayer.name} zachowuje kartę wyjścia z Komisji!`);
                             this.endTurn();
                             break;
                     }
                     break;
                 default:
-                    console.log(`Gracz: ${activePlayer.name} stanął na polu ${currentSpace.type}, które nie jest jeszcze obsługiwane.`);
+                    this.emit(`Gracz: ${activePlayer.name} stanął na polu ${currentSpace.type}, które nie jest jeszcze obsługiwane.`);
                     this.endTurn();
                     break;
             }
         }
     }
 
-    declareBankruptcy(bankruptPlayer, creditor = null) {
-        console.log(`Gracz ${bankruptPlayer.name} nie wytrzymał presji, brakuje mu środków i rzuca studia`);
+    private declareBankruptcy(bankruptPlayer: Player, creditor: Player | null = null): void {
+        this.emit(`Gracz ${bankruptPlayer.name} nie wytrzymał presji, brakuje mu środków i rzuca studia`);
         bankruptPlayer.bankruptcy = true;
 
         // wszystkie wydziały i stacje ZAWSZE wracają do uczelni czyli naszego banku
         for (let i = 0; i < this.board.spaces.length; i++) {
             if (this.board.spaces[i].ownerID === bankruptPlayer.id) {
                 this.board.spaces[i].ownerID = null;
-                console.log(`Pole ${this.board.spaces[i]?.name || "nieznane"} wraca pod władze uczelni`);
+                this.emit(`Pole ${this.board.spaces[i]?.name || "nieznane"} wraca pod władze uczelni`);
             }
         }
 
@@ -334,26 +361,26 @@ class Game {
         this.checkWinCondition();
     }
 
-    checkWinCondition() {
+    private checkWinCondition(): void {
         const activePlayers = this.players.filter(p => p.bankruptcy === false);
 
         if (activePlayers.length === 1) {
-            console.log(`Koniec gry! Zwycięża i dyplom zgarnia: ${activePlayers[0].name}!`);
+            this.emit(`Koniec gry! Zwycięża i dyplom zgarnia: ${activePlayers[0].name}!`);
             this.state = "GAME_OVER";
         } else {
             this.endTurn();
         }
     }
 
-    rollDice(){
-        if (this.state === "WAITING_FOR_ROLL"){
+    rollDice(): void {
+        if (this.state === "WAITING_FOR_ROLL") {
             const activePlayer = this.players[this.currentPlayerIndex];
 
-            if (activePlayer.inPrison === true){
+            if (activePlayer.inPrison === true) {
                 this.state = "IN_PRISON_DECISION";
             }
 
-            let dice1, dice2;
+            let dice1: number, dice2: number;
             dice1 = Math.floor(Math.random() * 6) + 1;
             dice2 = Math.floor(Math.random() * 6) + 1;
             const totalRoll = dice1 + dice2;
@@ -365,23 +392,31 @@ class Game {
             else {
                 this.dublets_in_a_row = 0;
             }
-            if (this.dublets_in_a_row === 3){
+            if (this.dublets_in_a_row === 3) {
                 activePlayer.position = 10;
                 activePlayer.inPrison = true;
                 this.extraTurn = false;
                 this.dublets_in_a_row = 0;
-                // zmiana na stan w więzieniu
-                console.log(`Gracz: ${activePlayer.name} oszukiwał na studiach (3 dublety pod rząd). Rektor wysyła go do Komisji Dyscyplinarnej`);
+                this.emit(`Gracz: ${activePlayer.name} oszukiwał na studiach (3 dublety pod rząd). Rektor wysyła go do Komisji Dyscyplinarnej`);
                 this.endTurn();
                 return;
             }
             else {
-                activePlayer.position = (activePlayer.position + totalRoll)%40;
+                activePlayer.position = (activePlayer.position + totalRoll) % 40;
             }
-            console.log(`Gracz: ${activePlayer.name} wyrzuca ${totalRoll}. Nowa pozycja: ${activePlayer.position}`);
+            this.emit(`Gracz: ${activePlayer.name} wyrzuca ${totalRoll}. Nowa pozycja: ${activePlayer.position}`);
             this.state = "FIELD_CHECKING";
             this.checkSpace();
         }
     }
+
+
+    private getPlayerOfThrow(ownerID: number) {
+        const owner = this.players.find(p => p.id === ownerID);
+        if (!owner) {
+            throw new Error("owner powinnien istnieć!")
+        }
+        return owner;
+    }
+
 }
-export default Game;

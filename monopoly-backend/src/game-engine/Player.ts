@@ -1,5 +1,15 @@
-﻿class Player {
-    constructor(id, name, colour) {
+export default class Player {
+    id: number;
+    name: string;
+    colour: string;
+    accountBalance: number;
+    bankruptcy: boolean;
+    position: number;
+    inPrison: boolean;
+    turnsInPrison: number;
+    hasOutOfPrisonCard: boolean;
+
+    constructor(id: number, name: string, colour: string) {
         // Dane przekazywane z zewnątrz
         this.id = id;
         this.name = name;
@@ -13,4 +23,3 @@
         this.hasOutOfPrisonCard = false;
     }
 }
-export default Player;

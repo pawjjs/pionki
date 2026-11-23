@@ -5,5 +5,6 @@ export class PlayersRoom {
         public readonly id: string,
         public readonly owner: string,
         public readonly players: string[],
+        public gameStarted: boolean,
     ) {}
 }
