@@ -1,10 +1,10 @@
-import {BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException} from '@nestjs/common';
-import {randomUUID} from 'node:crypto';
-import {RoomsCache} from './rooms.cache.js';
-import {MAX_PLAYERS_IN_ROOM, PlayersRoom} from './rooms.entities.js';
-import {RoomSummaryDto} from './dto/room-summary.dto.js';
-import {RoomDetailsDto} from './dto/room-details.dto.js';
-import {RoomIdDto} from './dto/room-id.dto.js';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { RoomsCache } from './rooms.cache.js';
+import { MAX_PLAYERS_IN_ROOM, PlayersRoom } from './rooms.entities.js';
+import { RoomSummaryDto } from './dto/room-summary.dto.js';
+import { RoomDetailsDto } from './dto/room-details.dto.js';
+import { RoomIdDto } from './dto/room-id.dto.js';
 import { GameService } from '../game/game.service.js';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class RoomsService {
     constructor(
         private readonly gameService: GameService,
         private readonly cache: RoomsCache
-    ) {}
+    ) { }
 
     openRoom(nickname: string): RoomDetailsDto {
         if (this.cache.findByPlayer(nickname)) {
@@ -27,7 +27,8 @@ export class RoomsService {
 
     getAvailableRooms(nickname: string): RoomSummaryDto[] {
         const ownRoom = this.cache.findByPlayer(nickname);
-
+        console.log('cache', this.cache);
+        console.log('ownRoom', ownRoom);
         return this.cache
             .findAll()
             .filter((room) => room.id !== ownRoom?.id)
@@ -43,7 +44,7 @@ export class RoomsService {
             throw new NotFoundException('You are not in a room');
         }
 
-        return {id: room.id};
+        return { id: room.id, gameStarted: room.gameStarted };
     }
 
     joinRoom(roomId: string, nickname: string): RoomDetailsDto {
